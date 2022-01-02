@@ -32,7 +32,7 @@ squirrel3_sources = [
   'src/vm.c'
   ]
 
-libsquirrel3lib = shared_library('squirrel3-0.1',
+libsquirrel3lib = shared_library('squirrel3',
   squirrel3_sources,
   vala_header: 'inc/libsquirrel3-0.1.h',
   vala_vapi: 'libsquirrel3-0.1.vapi',
@@ -50,7 +50,15 @@ pkg.generate(libsquirrel3lib,
   subdirs: 'libsquirrel3-0.1'
   )
 
-headers = ['inc/libsquirrel3-0.1.h',
+headers = ['inc/squirrel-0.1.h',
+  'Squirrel3/include/squirrel.h',
+  'Squirrel3/include/sqconfig.h',
+  'Squirrel3/include/sqstdaux.h',
+  'Squirrel3/include/sqstdblob.h',
+  'Squirrel3/include/sqstdio.h',
+  'Squirrel3/include/sqstdmath.h',
+  'Squirrel3/include/sqstdstring.h',
+  'Squirrel3/include/sqstdsystem.h',
   'inc/vm.h'
   ]
 
@@ -74,7 +82,7 @@ libsquirrel3_gir = gnome.generate_gir(libsquirrel3lib,
   install_dir_typelib: get_option('libdir') / 'girepository-1.0'
   )[0]
 
-gnome.generate_vapi('libsquirrel3-0.1',
+gnome.generate_vapi('libsquirrel3',
   install: true,
   sources:libsquirrel3_gir 
   )

@@ -55,7 +55,7 @@ typedef struct {
 } SquirrelMemberHandle;
 
 
-typedef glong (*SquirrelClosure)(gpointer hvm, gpointer user_data);
+typedef glong (*SquirrelFunction)(gpointer hvm, gpointer user_data);
 
 typedef glong (*SquirrelReleaseHook) (
         gpointer user_pointer, 
@@ -97,8 +97,6 @@ gboolean squirrel_vm_do_file(SquirrelVm* self, const gchar* path, gboolean retva
  * @self: the self
  * @c: (scope call): the callback
  */
-void squirrel_vm_test(SquirrelVm* self, SquirrelClosure c);
-
 glong squirrel_vm_suspend(SquirrelVm* self);
 glong squirrel_vm_wake_up(SquirrelVm* self, 
         gboolean resumedret, 
@@ -134,7 +132,7 @@ void squirrel_vm_new_array(SquirrelVm* self, glong size);
  * @c: (scope notified): the callback
  * @nfreevars: 
  */
-void squirrel_vm_new_closure(SquirrelVm* self, SquirrelClosure c, gulong nfreevars);
+void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gpointer user_data, gulong nfreevars);
 glong squirrel_vm_set_params_check(SquirrelVm* self, glong nparamscheck, const gchar* typemark);
 glong squirrel_vm_bind_env(SquirrelVm* self, glong idx);
 glong squirrel_vm_set_closure_root(SquirrelVm* self, glong idx);

@@ -36,7 +36,6 @@ static void squirrel_vm_class_init(SquirrelVmClass* klass)
 
 static void squirrel_vm_init(SquirrelVm* self)
 {
-
 }
 
 static void printfunc(HSQUIRRELVM v, const SQChar* s,...)
@@ -69,11 +68,6 @@ SquirrelVm* squirrel_vm_from_hvm(gpointer ptr)
 {
     SquirrelVm* self = sq_getforeignptr(ptr);
     return self;
-}
-
-void squirrel_vm_test(SquirrelVm* self, SquirrelClosure c)
-{
-    c(self->vm, NULL);
 }
 
 
@@ -181,7 +175,7 @@ void squirrel_vm_new_array(SquirrelVm* self, glong size)
     sq_newarray(self->vm, size);
 }
 
-void squirrel_vm_new_closure(SquirrelVm* self, SquirrelClosure c, gulong nfreevars)
+void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gpointer user_data, gulong nfreevars)
 {
     sq_newclosure(self->vm, c, nfreevars);
 }
