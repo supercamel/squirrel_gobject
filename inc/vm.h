@@ -138,6 +138,7 @@ glong squirrel_vm_bind_env(SquirrelVm* self, glong idx);
 glong squirrel_vm_set_closure_root(SquirrelVm* self, glong idx);
 glong squirrel_vm_get_closure_root(SquirrelVm* self, glong idx);
 void squirrel_vm_push_string(SquirrelVm* self, const gchar* s);
+void squirrel_vm_push_float(SquirrelVm* self, float v);
 void squirrel_vm_push_int(SquirrelVm* self, glong n);
 void squirrel_vm_push_bool(SquirrelVm* self, gboolean b);
 void squirrel_vm_push_user_pointer(SquirrelVm* self, gpointer p);
@@ -152,6 +153,14 @@ gboolean squirrel_vm_instance_of(SquirrelVm* self);
 glong squirrel_vm_to_string(SquirrelVm* self, glong idx);
 
 /**
+ * squirrel_vm_new_user_data:
+ * @self: the self
+ * @size: the number of bytes to allocate
+ * Return: (transfer none)
+ */
+void* squirrel_vm_new_user_data(SquirrelVm* self, guint size);
+
+/**
  * squirrel_vm_to_bool:
  * @self: the self
  * @idx: index
@@ -163,9 +172,9 @@ void squirrel_vm_to_bool(SquirrelVm* self, glong idx, gboolean* b);
  * squirrel_vm_get_string:
  * @self: the self
  * @idx: index
- * @s: (out)(transfer full): the string
+ * Return: (transfer full)
  */
-glong squirrel_vm_get_string(SquirrelVm* self, glong idx, const gchar** s);
+gchar* squirrel_vm_get_string(SquirrelVm* self, glong idx);
 
 /**
  * squirrel_vm_get_int:
