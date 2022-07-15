@@ -372,6 +372,11 @@ void squirrel_vm_push_int(SquirrelVm* self, glong n)
     sq_pushinteger(self->vm, n);
 }
 
+void squirrel_vm_push_float(SquirrelVm* self, float f) 
+{
+    sq_pushfloat(self->vm, f);
+}
+
 void squirrel_vm_push_bool(SquirrelVm* self, gboolean b)
 {
     sq_pushbool(self->vm, b);
@@ -427,18 +432,29 @@ glong squirrel_vm_to_string(SquirrelVm* self, glong idx)
     return sq_tostring(self->vm, idx);
 }
 
+void* squirrel_vm_new_user_data(SquirrelVm* self, guint sz)
+{
+    return sq_newuserdata(self->vm, sz);
+}
+
 void squirrel_vm_to_bool(SquirrelVm* self, glong idx, gboolean* b)
 {
     sq_tobool(self->vm, idx, b);
 }
 
 
-glong squirrel_vm_get_string(SquirrelVm* self, glong idx, const gchar** s)
+gchar* squirrel_vm_get_string(SquirrelVm* self, glong idx)
 {
+<<<<<<< HEAD
     const gchar* str;
     glong result = sq_getstring(self->vm, idx, &str);
     *s = g_strdup(str);
     return result;
+=======
+    gchar* s;
+    sq_getstring(self->vm, idx, &s);
+    return g_strdup(s);
+>>>>>>> a805a84c567fcfeae1efb6b6d0217c5e4ca3045a
 }
 
 glong squirrel_vm_get_int(SquirrelVm* self, glong idx, glong* i) 
