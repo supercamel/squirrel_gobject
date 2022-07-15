@@ -445,16 +445,9 @@ void squirrel_vm_to_bool(SquirrelVm* self, glong idx, gboolean* b)
 
 gchar* squirrel_vm_get_string(SquirrelVm* self, glong idx)
 {
-<<<<<<< HEAD
-    const gchar* str;
-    glong result = sq_getstring(self->vm, idx, &str);
-    *s = g_strdup(str);
-    return result;
-=======
     gchar* s;
     sq_getstring(self->vm, idx, &s);
     return g_strdup(s);
->>>>>>> a805a84c567fcfeae1efb6b6d0217c5e4ca3045a
 }
 
 glong squirrel_vm_get_int(SquirrelVm* self, glong idx, glong* i) 
