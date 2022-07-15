@@ -270,7 +270,7 @@ glong squirrel_vm_get_closure_info(SquirrelVm* self, glong idx, gulong* nparams,
 glong squirrel_vm_get_closure_name(SquirrelVm* self, glong idx);
 glong squirrel_vm_set_native_closure_name(SquirrelVm* self, glong idx, const gchar* name);
 glong squirrel_vm_set_instance_up(SquirrelVm* self, glong idx, gpointer p);
-glong squirrel_vm_get_instance_up(SquirrelVm* self, glong idx, gpointer* p, gpointer typetag);
+glong squirrel_vm_get_instance_up(SquirrelVm* self, glong idx, gpointer* p, gpointer typetag, gboolean throwerror);
 glong squirrel_vm_set_class_ud_size(SquirrelVm* self, glong idx, glong udsize);
 glong squirrel_vm_new_class(SquirrelVm* self, gboolean hasbase);
 glong squirrel_vm_create_instance(SquirrelVm* self, glong idx);

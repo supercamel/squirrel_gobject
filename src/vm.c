@@ -1,4 +1,5 @@
-#include "vm.h"
+#include "squirrel-0.1.h"
+#include <girepository.h>
 #include <squirrel.h>
 #include <sqstdmath.h>
 #include <sqstdio.h>
@@ -38,6 +39,165 @@ static void squirrel_vm_init(SquirrelVm* self)
 {
 }
 
+SQInteger squirrel_call_gi_function(HSQUIRRELVM v) 
+{
+    SQInteger nargs = sq_gettop(v);
+
+    SQStackInfos si;
+    sq_stackinfos(v, 0, &si);
+    printf("func: %s\n", si.funcname);
+
+    sq_getclosureroot(v, 1);
+
+    return 0;
+}
+
+
+static void require_function(HSQUIRRELVM v, GIFunctionInfo* fi)
+{
+    char* name = g_base_info_get_name(fi);
+    GICallableInfo* ci = fi;
+    gboolean throws_error = g_callable_info_can_throw_gerror(ci);
+
+    sq_pushstring(v, name, -1);
+    sq_newclosure(v, squirrel_call_gi_function, 0);
+    sq_setnativeclosurename(v, -1, name);
+    sq_newslot(v, -3, SQFalse);
+}
+
+static void require_constant(HSQUIRRELVM v, GIConstantInfo* ci)
+{
+    char* name = g_base_info_get_name(ci);
+    sq_pushstring(v, name, -1);
+    GITypeInfo* typeinfo = g_constant_info_get_type(ci);
+
+    GITypeTag tag = g_type_info_get_tag(typeinfo);
+    GIArgument value = {0,};
+    g_constant_info_get_value(ci, &value);
+
+    switch(tag) {
+        case GI_TYPE_TAG_INT8:
+            sq_pushinteger(v, value.v_uint8);
+            sq_newslot(v, -3, SQFalse);
+            break;
+        case GI_TYPE_TAG_UINT8:
+            sq_pushinteger(v, value.v_int8);
+            sq_newslot(v, -3, SQFalse);
+            break;
+        case GI_TYPE_TAG_INT16:
+            sq_pushinteger(v, value.v_int16);
+            sq_newslot(v, -3, SQFalse);
+            break;
+        case GI_TYPE_TAG_UINT16:
+            sq_pushinteger(v, value.v_uint16);
+            sq_newslot(v, -3, SQFalse);
+            break;
+        case GI_TYPE_TAG_INT32:
+            sq_pushinteger(v, value.v_int32);
+            sq_newslot(v, -3, SQFalse);
+            break;
+        case GI_TYPE_TAG_UINT32:
+            sq_pushinteger(v, value.v_uint32);
+            sq_newslot(v, -3, SQFalse);
+            break;
+        case GI_TYPE_TAG_INT64:
+            sq_pushinteger(v, value.v_int64);
+            sq_newslot(v, -3, SQFalse);
+            break;
+        case GI_TYPE_TAG_UINT64:
+            sq_pushinteger(v, value.v_uint64);
+            sq_newslot(v, -3, SQFalse);
+            break;
+        case GI_TYPE_TAG_UTF8:
+            sq_pushstring(v, value.v_string, strlen(value.v_string));
+            sq_newslot(v, -3, SQFalse);
+            break;
+        case GI_TYPE_TAG_FLOAT:
+            sq_pushfloat(v, value.v_float);
+            sq_newslot(v, -3, SQFalse);
+            break;
+        case GI_TYPE_TAG_DOUBLE:
+            sq_pushfloat(v, value.v_double);
+            sq_newslot(v, -3, SQFalse);
+            break;
+        case GI_TYPE_TAG_BOOLEAN:
+            sq_pushbool(v, value.v_boolean);
+            sq_newslot(v, -3, SQFalse);
+            break;
+        default:
+            {
+                char msg[256];
+                sprintf(msg, "Cannot import constant of type %s", g_type_tag_to_string(tag));
+                g_warning(msg);
+                sq_pop(v, 1);
+            }
+
+    }
+}
+
+SQInteger squirrel_require(HSQUIRRELVM v) 
+{
+    SQInteger nargs = sq_gettop(v);
+    if(nargs != 3) {
+        return sq_throwerror(v, "require() takes 2 string parameters");
+    }
+    if((sq_gettype(v, 2) != OT_STRING) || (sq_gettype(v, 3) != OT_STRING)) {
+        return sq_throwerror(v, "require() takes 2 string parameters, the library name and version");
+    }
+
+    const char* lib;
+    const char* version;
+    sq_getstring(v, 2, &lib);
+    sq_getstring(v, 3, &version);
+
+    printf("%s %s\n", lib, version);
+    fflush(stdout);
+
+    GIRepository* repository = g_irepository_get_default();
+    GError *error = NULL;
+    if(g_irepository_require (repository, lib, version, 0, &error) == NULL) {
+        char msg[1024];
+        sprintf(msg, "Error finding library %s %s\n", lib, version);
+        return sq_throwerror(v, msg);
+    }
+
+    if (error)
+    {
+        char msg[1024];
+        sprintf(msg, "ERROR: %s\n", error->message);
+        return sq_throwerror(v, msg);
+    }
+
+    sq_pushroottable(v);
+    sq_pushstring(v, lib, -1);
+    sq_newtable(v);
+
+    gint ninfos = g_irepository_get_n_infos(repository, lib);
+    for(int i = 0; i < ninfos; i++) {
+        GIBaseInfo* baseinfo = g_irepository_get_info(repository, lib, i);
+        switch(g_base_info_get_type(baseinfo)) {
+            case GI_INFO_TYPE_CONSTANT:
+                {
+                    require_constant(v, baseinfo);
+                }
+                break;
+            case GI_INFO_TYPE_FUNCTION:
+                {
+                    require_function(v, baseinfo);
+                } 
+                break;
+
+
+        }
+    }
+
+    sq_newslot(v, -3, SQFalse);
+    sq_pop(v, 1);
+
+
+    return 0;
+}
+
 static void printfunc(HSQUIRRELVM v, const SQChar* s,...)
 {
     va_list vl;
@@ -70,7 +230,6 @@ SquirrelVm* squirrel_vm_from_hvm(gpointer ptr)
     return self;
 }
 
-
 SquirrelVm* squirrel_vm_new(glong initial_stack_size)
 {
     SquirrelVm* self = g_object_new(SQUIRREL_TYPE_VM, NULL);
@@ -78,6 +237,13 @@ SquirrelVm* squirrel_vm_new(glong initial_stack_size)
     sq_setforeignptr(self->vm, self);
     sqstd_seterrorhandlers(self->vm);
     sq_setprintfunc(self->vm, printfunc, errorfunc);
+
+    // register the require function into the root table
+    sq_pushroottable(self->vm);
+    sq_pushstring(self->vm, "require", -1);
+    sq_newclosure(self->vm, squirrel_require, 0);
+    sq_newslot(self->vm, -3, SQFalse);
+    sq_pop(self->vm, 1); 
     return self;
 }
 
@@ -112,6 +278,7 @@ gboolean squirrel_vm_do_file(
         gboolean retval, 
         gboolean print_error)
 {
+    sq_pushroottable(self->vm);
     return sqstd_dofile(self->vm, path, retval, print_error);
 }
 
@@ -268,7 +435,10 @@ void squirrel_vm_to_bool(SquirrelVm* self, glong idx, gboolean* b)
 
 glong squirrel_vm_get_string(SquirrelVm* self, glong idx, const gchar** s)
 {
-    return sq_getstring(self->vm, idx, s);
+    const gchar* str;
+    glong result = sq_getstring(self->vm, idx, &str);
+    *s = g_strdup(str);
+    return result;
 }
 
 glong squirrel_vm_get_int(SquirrelVm* self, glong idx, glong* i) 
@@ -367,9 +537,9 @@ glong squirrel_vm_set_instance_up(SquirrelVm* self, glong idx, gpointer p)
 }
 
 glong squirrel_vm_get_instance_up(
-        SquirrelVm* self, glong idx, gpointer* p, gpointer typetag)
+        SquirrelVm* self, glong idx, gpointer* p, gpointer typetag, gboolean throwerror)
 {
-    return sq_getinstanceup(self->vm, idx, p, typetag);
+    return sq_getinstanceup(self->vm, idx, p, typetag, throwerror);
 }
 
 glong squirrel_vm_set_class_ud_size(SquirrelVm* self, glong idx, glong udsize)

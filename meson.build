@@ -5,7 +5,8 @@ pkg = import('pkgconfig')
 
 dependencies = [
   dependency('glib-2.0'),
-  dependency('gobject-2.0')
+  dependency('gobject-2.0'),
+  dependency('gobject-introspection-1.0')
   ]
 
 squirrel3_sources = [
@@ -58,13 +59,12 @@ headers = ['inc/squirrel-0.1.h',
   'Squirrel3/include/sqstdio.h',
   'Squirrel3/include/sqstdmath.h',
   'Squirrel3/include/sqstdstring.h',
-  'Squirrel3/include/sqstdsystem.h',
-  'inc/vm.h'
+  'Squirrel3/include/sqstdsystem.h'
   ]
 
 install_headers(headers, subdir: 'libsquirrel3-0.1')
 introspection_sources = [
-  'inc/vm.h',
+  'inc/squirrel-0.1.h',
   'src/vm.c'
   ]
 
