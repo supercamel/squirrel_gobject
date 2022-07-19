@@ -18,4 +18,4 @@ vm.connect("on_print", on_print)
 #vm.new_closure(test_foo, None, 0)
 #vm.new_slot(-3, False)
 
-print(vm.do_file("gir.nut", False, True))
+vm.do_file("gir.nut", False, True)

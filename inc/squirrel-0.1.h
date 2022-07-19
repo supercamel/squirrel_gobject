@@ -10,7 +10,7 @@ G_BEGIN_DECLS
 
 G_DECLARE_FINAL_TYPE (SquirrelVm, squirrel_vm, Squirrel, Vm, GObject)
 
-
+   
 typedef enum {
     SQUIRREL_OBJECTTYPE_NULL = OT_NULL,
     SQUIRREL_OBJECTTYPE_INTEGER = OT_INTEGER,
@@ -55,6 +55,15 @@ typedef struct {
 } SquirrelMemberHandle;
 
 
+#define SQUIRREL_TYPE_STACK_INFOS (squirrel_stack_infos_get_type())
+
+typedef struct {
+    const gchar* funcname;
+    const gchar* source;
+    glong line;
+} SquirrelStackInfos;
+
+
 typedef glong (*SquirrelFunction)(gpointer hvm, gpointer user_data);
 
 typedef glong (*SquirrelReleaseHook) (
@@ -75,7 +84,9 @@ typedef glong (*SquirrelReadFunc)(
         glong i, 
         gpointer user_data);
 
-
+#define SQUIRREL_OK 0
+#define SQUIRREL_ERROR -1
+ 
 /**
  * squirrel_vm_from_hvm:
  * @ptr: the VM pointer
@@ -172,9 +183,9 @@ void squirrel_vm_to_bool(SquirrelVm* self, glong idx, gboolean* b);
  * squirrel_vm_get_string:
  * @self: the self
  * @idx: index
- * Return: (transfer full)
+ * @s: (out)(transfer none): the string
  */
-gchar* squirrel_vm_get_string(SquirrelVm* self, glong idx);
+glong squirrel_vm_get_string(SquirrelVm* self, glong idx, gchar** s);
 
 /**
  * squirrel_vm_get_int:
@@ -377,6 +388,15 @@ glong squirrel_vm_write_closure(
 glong squirrel_vm_read_closure(
         SquirrelVm* self, SquirrelReadFunc rp, gpointer user_pointer);
 
+
+// debug
+/**
+ * squirrel_vm_stack_infos:
+ * @self: the self
+ * @level: the level
+ * @si: (out)(transfer full): the stack info
+ */
+glong squirrel_vm_stack_infos(SquirrelVm* self, gint level, SquirrelStackInfos* si);
 
 glong squirrel_vm_register_mathlib(SquirrelVm* self);
 
