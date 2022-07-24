@@ -64,13 +64,11 @@ typedef struct {
 } SquirrelStackInfos;
 
 
-typedef glong (*SquirrelFunction)(gpointer hvm, gpointer user_data);
+typedef glong (*SquirrelFunction)(SquirrelVm* hvm);
 
 typedef glong (*SquirrelReleaseHook) (
         gpointer user_pointer, 
-        glong size, 
-        gpointer user_data
-        );
+        glong size);
 
 typedef glong (*SquirrelWriteFunc)(
         gpointer ptr, 
@@ -87,6 +85,9 @@ typedef glong (*SquirrelReadFunc)(
 #define SQUIRREL_OK 0
 #define SQUIRREL_ERROR -1
  
+
+const char* squirrel_objecttype_to_string(SquirrelOBJECTTYPE t);
+
 /**
  * squirrel_vm_from_hvm:
  * @ptr: the VM pointer
@@ -94,6 +95,7 @@ typedef glong (*SquirrelReadFunc)(
  */
 SquirrelVm* squirrel_vm_from_hvm(gpointer ptr);
 
+gboolean squirrel_vm_check_type(SquirrelVm* self, glong sp, SquirrelOBJECTTYPE t);
 /**
  * squirrel_vm_new:
  * @initial_stack_size: initial stack size for the VM, 1024 is usually a good number
@@ -143,12 +145,13 @@ void squirrel_vm_new_array(SquirrelVm* self, glong size);
  * @c: (scope notified): the callback
  * @nfreevars: 
  */
-void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gpointer user_data, gulong nfreevars);
+void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gulong nfreevars);
 glong squirrel_vm_set_params_check(SquirrelVm* self, glong nparamscheck, const gchar* typemark);
 glong squirrel_vm_bind_env(SquirrelVm* self, glong idx);
 glong squirrel_vm_set_closure_root(SquirrelVm* self, glong idx);
 glong squirrel_vm_get_closure_root(SquirrelVm* self, glong idx);
 void squirrel_vm_push_string(SquirrelVm* self, const gchar* s);
+void squirrel_vm_push_string_with_len(SquirrelVm* self, const gchar* s, glong len);
 void squirrel_vm_push_float(SquirrelVm* self, float v);
 void squirrel_vm_push_int(SquirrelVm* self, glong n);
 void squirrel_vm_push_bool(SquirrelVm* self, gboolean b);
@@ -186,6 +189,15 @@ void squirrel_vm_to_bool(SquirrelVm* self, glong idx, gboolean* b);
  * @s: (out)(transfer none): the string
  */
 glong squirrel_vm_get_string(SquirrelVm* self, glong idx, gchar** s);
+
+/**
+ * squirrel_vm_get_string_and_size:
+ * @self: the self
+ * @idx: stack position of the string
+ * @s: (out)(transfer none): the string
+ * @sz: (out): the size of the string
+ */
+glong squirrel_vm_get_string_and_size(SquirrelVm* self, glong idx, gchar** s, glong* sz);
 
 /**
  * squirrel_vm_get_int:

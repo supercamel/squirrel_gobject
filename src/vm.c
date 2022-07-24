@@ -56,19 +56,82 @@ static void errorfunc(HSQUIRRELVM v, const SQChar* s,...)
 {
     va_list vl;
     va_start(vl, s);
-    gchar* msg = (gchar*)g_malloc(1024);
-    vsnprintf(msg, 1024, s, vl);
+    GString* msg = g_string_new(NULL);
+    g_string_vprintf(msg, s, vl);
     va_end(vl);
 
     SquirrelVm* self = sq_getforeignptr(v);
-    g_signal_emit(self, signals[ON_PRINT], 0, msg);
-    g_free(msg);
+    g_signal_emit(self, signals[ON_PRINT], 0, msg->str);
+    g_string_free(msg, TRUE);
 }
 
 SquirrelVm* squirrel_vm_from_hvm(gpointer ptr)
 {
     SquirrelVm* self = sq_getforeignptr(ptr);
     return self;
+}
+
+
+const char* squirrel_objecttype_to_string(SquirrelOBJECTTYPE t)
+{
+    switch(t)
+    {
+        case SQUIRREL_OBJECTTYPE_NULL:
+            return "null";
+        case SQUIRREL_OBJECTTYPE_INTEGER:
+            return "integer";
+        case SQUIRREL_OBJECTTYPE_FLOAT:
+            return "float";
+        case SQUIRREL_OBJECTTYPE_BOOL:
+            return "bool";
+        case SQUIRREL_OBJECTTYPE_STRING:
+            return "string";
+        case SQUIRREL_OBJECTTYPE_TABLE:
+            return "table";
+        case SQUIRREL_OBJECTTYPE_ARRAY:
+            return "array";
+        case SQUIRREL_OBJECTTYPE_USERDATA:
+            return "userdata";
+        case SQUIRREL_OBJECTTYPE_CLOSURE:
+            return "closure";
+        case SQUIRREL_OBJECTTYPE_NATIVECLOSURE:
+            return "native closure";
+        case SQUIRREL_OBJECTTYPE_GENERATOR:
+            return "generator";
+        case SQUIRREL_OBJECTTYPE_USERPOINTER:
+            return "user pointer";
+        case SQUIRREL_OBJECTTYPE_THREAD:
+            return "thread";
+        case SQUIRREL_OBJECTTYPE_FUNCPROTO:
+            return "funcproto";
+        case SQUIRREL_OBJECTTYPE_CLASS:
+            return "class";
+        case SQUIRREL_OBJECTTYPE_INSTANCE:
+            return "instance";
+        case SQUIRREL_OBJECTTYPE_WEAKREF:
+            return "weakref";
+        case SQUIRREL_OBJECTTYPE_OUTER:
+            return "outer";
+        default:
+            return "undefined";
+    }
+}
+
+
+gboolean squirrel_vm_check_type(SquirrelVm* self, glong sp, SquirrelOBJECTTYPE t)
+{
+    SquirrelOBJECTTYPE o = sq_gettype(self->vm, sp);
+    if(o != t) {
+        GString* s = g_string_new(NULL);
+        g_string_printf("expected %s, got %s", 
+                squirrel_objecttype_to_string(t), 
+                squirrel_objecttype_to_string(o));
+        sq_throwerror(self->vm, s->str);
+        g_string_free(s, TRUE);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 SquirrelVm* squirrel_vm_new(glong initial_stack_size)
@@ -81,12 +144,12 @@ SquirrelVm* squirrel_vm_new(glong initial_stack_size)
 
     // register the require function into the root table
     /*
-    sq_pushroottable(self->vm);
-    sq_pushstring(self->vm, "require", -1);
-    sq_newclosure(self->vm, squirrel_require, 0);
-    sq_newslot(self->vm, -3, SQFalse);
-    sq_pop(self->vm, 1); 
-    */
+       sq_pushroottable(self->vm);
+       sq_pushstring(self->vm, "require", -1);
+       sq_newclosure(self->vm, squirrel_require, 0);
+       sq_newslot(self->vm, -3, SQFalse);
+       sq_pop(self->vm, 1); 
+       */
     return self;
 }
 
@@ -185,9 +248,31 @@ void squirrel_vm_new_array(SquirrelVm* self, glong size)
     sq_newarray(self->vm, size);
 }
 
-void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gpointer user_data, gulong nfreevars)
+SQInteger sqfoo(HSQUIRRELVM hvm)
 {
-    sq_newclosure(self->vm, c, nfreevars);
+    SquirrelVm* vm = squirrel_vm_from_hvm(hvm);
+
+    SquirrelFunction c;
+    sq_getuserpointer(hvm, 2, &c);
+    sq_remove(hvm, 2);
+
+    SQInteger result = 0;
+    if(c != NULL) 
+    {
+        result = (*c)(vm);
+    }
+    else 
+    {
+        g_warning("could not get hvm from top of stack");
+    }
+
+    return result;
+}
+
+void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gulong nfreevars)
+{
+    sq_pushuserpointer(self->vm, c);
+    sq_newclosure(self->vm, sqfoo, nfreevars+1);
 }
 
 glong squirrel_vm_bind_env(SquirrelVm* self, glong idx)
@@ -208,6 +293,11 @@ glong squirrel_vm_get_closure_root(SquirrelVm* self, glong idx)
 void squirrel_vm_push_string(SquirrelVm* self, const gchar* s)
 {
     sq_pushstring(self->vm, s, strlen(s));
+}
+
+void squirrel_vm_push_string_with_len(SquirrelVm* self, const gchar* s, glong len)
+{
+    sq_pushstring(self->vm, s, len);
 }
 
 void squirrel_vm_push_int(SquirrelVm* self, glong n)
@@ -290,6 +380,11 @@ glong squirrel_vm_get_string(SquirrelVm* self, glong idx, gchar** s)
 {
     glong ret = sq_getstring(self->vm, idx, s);
     return ret;
+}
+
+glong squirrel_vm_get_string_and_size(SquirrelVm* self, glong idx, gchar** s, glong* sz)
+{
+    return sq_getstringandsize(self->vm, idx, s, sz);
 }
 
 glong squirrel_vm_get_int(SquirrelVm* self, glong idx, glong* i) 
