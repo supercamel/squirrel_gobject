@@ -30,7 +30,8 @@ squirrel3_sources = [
   'Squirrel3/sqstdlib/sqstdstream.cpp',
   'Squirrel3/sqstdlib/sqstdstring.cpp',
   'Squirrel3/sqstdlib/sqstdsystem.cpp',
-  'src/vm.c'
+  'src/vm.c',
+  'src/obj.c'
   ]
 
 libsquirrel3lib = shared_library('squirrel3',

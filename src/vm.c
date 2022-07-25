@@ -1,5 +1,4 @@
 #include "squirrel-0.1.h"
-#include <girepository.h>
 #include <squirrel.h>
 #include <sqstdmath.h>
 #include <sqstdio.h>
@@ -13,18 +12,12 @@ struct _SquirrelVm
 
 G_DEFINE_TYPE (SquirrelVm, squirrel_vm, G_TYPE_OBJECT)
 
-    enum {
-        PROP_0,
-        LAST_PROP
-    };
-
 enum {
     ON_PRINT,
     ON_ERROR,
     LAST_SIGNAL
 };
 
-static GParamSpec* properties[LAST_PROP];
 static guint signals[LAST_SIGNAL];
 
 static void squirrel_vm_class_init(SquirrelVmClass* klass)
@@ -732,69 +725,70 @@ void squirrel_vm_get_last_error(SquirrelVm* self)
     sq_getlasterror(self->vm);
 }
 
-glong squirrel_vm_get_stack_obj(SquirrelVm* self, glong idx, SquirrelObj* po)
+glong squirrel_vm_get_stack_object(SquirrelVm* self, glong idx, SquirrelObj** po)
 {
-    return sq_getstackobj(self->vm, idx, po);
+    *po = g_object_new(SQUIRREL_TYPE_OBJ, NULL);
+    return sq_getstackobj(self->vm, idx, &(*po)->hsq_obj);
 }
 
-void squirrel_vm_push_object(SquirrelVm* self, SquirrelObj obj)
+void squirrel_vm_push_object(SquirrelVm* self, SquirrelObj* obj)
 {
-    sq_pushobject(self->vm, obj);
+    sq_pushobject(self->vm, obj->hsq_obj);
 }
 
 void squirrel_vm_add_ref(SquirrelVm* self, SquirrelObj* po)
 {
-    sq_addref(self->vm, po);
+    sq_addref(self->vm, &po->hsq_obj);
 }
 
 gboolean squirrel_vm_release(SquirrelVm* self, SquirrelObj* po)
 {
-    return sq_release(self->vm, po);
+    return sq_release(self->vm, &po->hsq_obj);
 }
 
 gulong squirrel_vm_get_ref_count(SquirrelVm* self, SquirrelObj* po)
 {
-    return sq_getrefcount(self->vm, po);
+    return sq_getrefcount(self->vm, &po->hsq_obj);
 }
 
 void squirrel_reset_object(SquirrelObj* po)
 {
-    sq_resetobject(po);
+    sq_resetobject(&po->hsq_obj);
 }
 
 const gchar* squirrel_obj_to_string(const SquirrelObj* obj)
 {
-    return sq_objtostring(obj);
+    return sq_objtostring(&obj->hsq_obj);
 }
 
 gboolean squirrel_obj_to_bool(const SquirrelObj* po)
 {
-    return sq_objtobool(po);
+    return sq_objtobool(&po->hsq_obj);
 }
 
 glong squirrel_obj_to_integer(const SquirrelObj* po)
 {
-    return sq_objtointeger(po);
+    return sq_objtointeger(&po->hsq_obj);
 }
 
 gfloat squirrel_obj_to_float(const SquirrelObj* po)
 {
-    return sq_objtofloat(po);
+    return sq_objtofloat(&po->hsq_obj);
 }
 
 gpointer squirrel_obj_to_user_pointer(const SquirrelObj* po)
 {
-    return sq_objtouserpointer(po);
+    return sq_objtouserpointer(&po->hsq_obj);
 }
 
 glong squirrel_get_obj_type_tag(const SquirrelObj* po, gpointer* typetag)
 {
-    return sq_getobjtypetag(po, typetag);
+    return sq_getobjtypetag(&po->hsq_obj, typetag);
 }
 
 gulong squirrel_vm_get_vm_ref_count(SquirrelVm* self, const SquirrelObj* po)
 {
-    return sq_getvmrefcount(self->vm, po);
+    return sq_getvmrefcount(self->vm, &po->hsq_obj);
 }
 
 
@@ -828,7 +822,7 @@ glong squirrel_vm_stack_infos(SquirrelVm* self, gint level, SquirrelStackInfos* 
 
 glong squirrel_vm_register_mathlib(SquirrelVm* self)
 {
-    sqstd_register_mathlib(self->vm);
+    return sqstd_register_mathlib(self->vm);
 }
 
 

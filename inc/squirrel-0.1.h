@@ -35,7 +35,15 @@ typedef enum {
 #define SQUIRREL_TYPE_OBJECTTYPE (squirrel_objecttype_get_type())
 
 #define SQUIRREL_TYPE_OBJ (squirrel_obj_get_type())
-typedef struct tagSQObject SquirrelObj;
+
+G_DECLARE_FINAL_TYPE (SquirrelObj, squirrel_obj, Squirrel, Obj, GObject)
+
+struct _SquirrelObj
+{
+    GObject parent_instance;
+    HSQOBJECT hsq_obj;
+};
+
 
 
 #define SQUIRREL_TYPE_FUNCTION_INFO (squirrel_function_info_get_type())
@@ -73,14 +81,12 @@ typedef glong (*SquirrelReleaseHook) (
 typedef glong (*SquirrelWriteFunc)(
         gpointer ptr, 
         gpointer user_pointer, 
-        glong i, 
-        gpointer user_data);
+        glong i);
 
 typedef glong (*SquirrelReadFunc)(
         gpointer ptr, 
         gpointer user_pointer, 
-        glong i, 
-        gpointer user_data);
+        glong i);
 
 #define SQUIRREL_OK 0
 #define SQUIRREL_ERROR -1
@@ -88,12 +94,6 @@ typedef glong (*SquirrelReadFunc)(
 
 const char* squirrel_objecttype_to_string(SquirrelOBJECTTYPE t);
 
-/**
- * squirrel_vm_from_hvm:
- * @ptr: the VM pointer
- * Return: (transfer none): 
- */
-SquirrelVm* squirrel_vm_from_hvm(gpointer ptr);
 
 gboolean squirrel_vm_check_type(SquirrelVm* self, glong sp, SquirrelOBJECTTYPE t);
 /**
@@ -302,6 +302,15 @@ glong squirrel_vm_get_closure_info(SquirrelVm* self, glong idx, gulong* nparams,
 glong squirrel_vm_get_closure_name(SquirrelVm* self, glong idx);
 glong squirrel_vm_set_native_closure_name(SquirrelVm* self, glong idx, const gchar* name);
 glong squirrel_vm_set_instance_up(SquirrelVm* self, glong idx, gpointer p);
+
+/**
+ * squirrel_vm_get_instance_up:
+ * @self: the self
+ * @idx: the index in the stack of the class to get the user pointer from
+ * @p: (out): the pointer to get
+ * @typetag: the type to check the user pointer against (can be 0)
+ * @throwerror: if true an error will be thrown if the typetag check fails
+ */
 glong squirrel_vm_get_instance_up(SquirrelVm* self, glong idx, gpointer* p, gpointer typetag, gboolean throwerror);
 glong squirrel_vm_set_class_ud_size(SquirrelVm* self, glong idx, glong udsize);
 glong squirrel_vm_new_class(SquirrelVm* self, gboolean hasbase);
@@ -362,8 +371,14 @@ void squirrel_vm_get_last_error(SquirrelVm* self);
 
 
 // raw object handling
-glong squirrel_vm_get_stack_obj(SquirrelVm* self, glong idx, SquirrelObj* po);
-void squirrel_vm_push_object(SquirrelVm* self, SquirrelObj obj);
+/**
+ * squirrel_vm_get_stack_object:
+ * @self: the self
+ * @idx: the index of the object to get
+ * @po: (out): pointer to the object that has been retrieved
+ */
+glong squirrel_vm_get_stack_object(SquirrelVm* self, glong idx, SquirrelObj** po);
+void squirrel_vm_push_object(SquirrelVm* self, SquirrelObj* obj);
 void squirrel_vm_add_ref(SquirrelVm* self, SquirrelObj* po);
 gboolean squirrel_vm_release(SquirrelVm* self, SquirrelObj* po);
 gulong squirrel_vm_get_ref_count(SquirrelVm* self, SquirrelObj* po);
