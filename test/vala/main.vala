@@ -9,20 +9,6 @@
  *
  */
 
-delegate long SquirrelVmDelegate(void* hvm);
-
-// expose_function 
-void expose_function(Squirrel.Vm vm, string name, SquirrelVmDelegate callback) {
-    // push the function name
-    vm.push_string(name);
-    // new_closure using the callback. 0 free variables
-    vm.new_closure(callback, 0);
-    // new_slot pops te closure and the function name from the stack
-    // and creates a new entry in the table or class at the specified index
-    // which is -3, or whatever was pushed before calling expose_function
-    vm.new_slot(-3, false);
-}
-
 
 public static int main() {
     var vm = new Squirrel.Vm(1024);
@@ -40,30 +26,33 @@ public static int main() {
     // the parameter that squirrel passes is a pointer to the underlying 
     // squirrel hvm object
     // to get the Squirrel.Vm object, you must pass the hvm to Squirrel.Vm.from_hvm()
-    expose_function(vm, "hello_world_foo",  (hvm) => {
-        var v = Squirrel.Vm.from_hvm(hvm); // get the Vm object
-        v.push_string("Hello world\n"); // push a string onto the stack
-        return 1; // the number of returned objects
-    });
 
-    expose_function(vm, "native_add", (hvm) => {
-        var v = Squirrel.Vm.from_hvm(hvm);
-        var n_args  = v.get_top();
+    vm.push_string("hello_world_foo");
+    vm.new_closure((vm) => {
+        vm.push_string("hello world\n");
+        return 1;
+    }, 0);
+    vm.new_slot(-3, false);
+
+    vm.push_string("native_add");
+    vm.new_closure((vm) => {
+        var n_args  = vm.get_top();
         if(n_args >= 3) {
-            if( (v.get_object_type(2) == Squirrel.OBJECTTYPE.INTEGER) && 
-                (v.get_object_type(3) == Squirrel.OBJECTTYPE.INTEGER)) 
+            if( (vm.get_object_type(2) == Squirrel.OBJECTTYPE.INTEGER) && 
+                (vm.get_object_type(3) == Squirrel.OBJECTTYPE.INTEGER)) 
             {
                 long a, b;
-                v.get_int(2, out a);
-                v.get_int(3, out b);
-                v.push_int(a+b);
+                vm.get_int(2, out a);
+                vm.get_int(3, out b);
+                vm.push_int(a+b);
                 return 1;
             }
         }
 
-        v.throw_error("native_add requires 2 integers");
-        return 0;
-    });
+        vm.throw_error("native_add requires 2 integers");
+        return -1;
+    }, 0);
+    vm.new_slot(-3, false);
 
 
     vm.do_file("hello.nut", false, true);

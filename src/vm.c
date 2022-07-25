@@ -248,13 +248,13 @@ void squirrel_vm_new_array(SquirrelVm* self, glong size)
     sq_newarray(self->vm, size);
 }
 
-SQInteger sqfoo(HSQUIRRELVM hvm)
+static SQInteger squirrel_exec_native_closure(HSQUIRRELVM hvm)
 {
     SquirrelVm* vm = squirrel_vm_from_hvm(hvm);
 
     SquirrelFunction c;
-    sq_getuserpointer(hvm, 2, &c);
-    sq_remove(hvm, 2);
+    sq_getuserpointer(hvm, -1, &c);
+    sq_pop(hvm, 1);
 
     SQInteger result = 0;
     if(c != NULL) 
@@ -263,7 +263,7 @@ SQInteger sqfoo(HSQUIRRELVM hvm)
     }
     else 
     {
-        g_warning("could not get hvm from top of stack");
+        g_warning("could not get c function pointer from top of stack");
     }
 
     return result;
@@ -272,7 +272,7 @@ SQInteger sqfoo(HSQUIRRELVM hvm)
 void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gulong nfreevars)
 {
     sq_pushuserpointer(self->vm, c);
-    sq_newclosure(self->vm, sqfoo, nfreevars+1);
+    sq_newclosure(self->vm, squirrel_exec_native_closure, nfreevars+1);
 }
 
 glong squirrel_vm_bind_env(SquirrelVm* self, glong idx)
