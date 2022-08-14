@@ -312,6 +312,12 @@ glong squirrel_vm_set_instance_up(SquirrelVm* self, glong idx, gpointer p);
  * @throwerror: if true an error will be thrown if the typetag check fails
  */
 glong squirrel_vm_get_instance_up(SquirrelVm* self, glong idx, gpointer* p, gpointer typetag, gboolean throwerror);
+
+/**
+ * squirrel_vm_get_instance:
+ * A special case of get_instance_up that assumes the user pointer is a gobject
+ */
+gpointer squirrel_vm_get_instance(SquirrelVm* self, glong idx);
 glong squirrel_vm_set_class_ud_size(SquirrelVm* self, glong idx, glong udsize);
 glong squirrel_vm_new_class(SquirrelVm* self, gboolean hasbase);
 glong squirrel_vm_create_instance(SquirrelVm* self, glong idx);

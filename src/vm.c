@@ -12,11 +12,11 @@ struct _SquirrelVm
 
 G_DEFINE_TYPE (SquirrelVm, squirrel_vm, G_TYPE_OBJECT)
 
-enum {
-    ON_PRINT,
-    ON_ERROR,
-    LAST_SIGNAL
-};
+    enum {
+        ON_PRINT,
+        ON_ERROR,
+        LAST_SIGNAL
+    };
 
 static guint signals[LAST_SIGNAL];
 
@@ -264,7 +264,34 @@ static SQInteger squirrel_exec_native_closure(HSQUIRRELVM hvm)
 
 void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gulong nfreevars)
 {
-    sq_pushuserpointer(self->vm, c);
+    // we gotta intercept function calls so that the HSQUIRRELVM is wrapped by a SquirrelVm gobject
+    // the user provided function pointer is pushed to the stack as a free variable
+    // then the squirrel_exec_native_closure function is provided to squirrel . . . 
+    // squirrel_exec_native_closure pulls the actual target function from the stack
+    // packs the hvm into a SquirrelVm 
+    // then calls the actual target function
+    //
+    // problem is, if the user also provides free variables, squirrel_exec_native_closure
+    // can't know which one of these is the function pointer
+    // so we do a sneaky stack shuffle to insert the function pointer at the start
+    if(nfreevars > 0) {
+        HSQOBJECT* freevars = g_malloc(sizeof(HSQOBJECT)*nfreevars);
+        for(int i = 0; i < nfreevars; i++) {
+            sq_getstackobj(self->vm, -1, &freevars[i]);
+            sq_addref(self->vm, &freevars[i]);
+            sq_pop(self->vm, 1);
+        }
+        sq_pushuserpointer(self->vm, c);
+
+        for(int i = nfreevars-1; i >= 0; i--) {
+            sq_pushobject(self->vm, freevars[i]);
+            sq_release(self->vm, &freevars[i]);
+        }
+        g_free(freevars);
+    }
+    else {
+        sq_pushuserpointer(self->vm, c);
+    }
     sq_newclosure(self->vm, squirrel_exec_native_closure, nfreevars+1);
 }
 
@@ -479,6 +506,13 @@ glong squirrel_vm_get_instance_up(
         SquirrelVm* self, glong idx, gpointer* p, gpointer typetag, gboolean throwerror)
 {
     return sq_getinstanceup(self->vm, idx, p, typetag, throwerror);
+}
+
+gpointer squirrel_vm_get_instance(SquirrelVm* self, glong idx)
+{
+    gpointer r;
+    sq_getinstanceup(self->vm, idx, &r, NULL, FALSE);
+    return r;
 }
 
 glong squirrel_vm_set_class_ud_size(SquirrelVm* self, glong idx, glong udsize)

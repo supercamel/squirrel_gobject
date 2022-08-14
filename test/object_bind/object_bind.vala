@@ -35,7 +35,7 @@ class MyClass : Object
  * The destructor releases all the callbacks from the VM.
  * This is neccessary to prevent memory leaks when classes are instantiated and destroyed by Squirrel
  */
-class MyClassWrap : MyClass
+class MyClassWrap : Object
 {
     public MyClassWrap(Squirrel.Vm v) {
         callbacks = new SList<Squirrel.Obj>(); 
