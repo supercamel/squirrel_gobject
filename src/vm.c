@@ -295,6 +295,11 @@ void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gulong nfreev
     sq_newclosure(self->vm, squirrel_exec_native_closure, nfreevars+1);
 }
 
+glong squirrel_vm_set_params_check(SquirrelVm* self, glong nparamscheck, const gchar* typemark)
+{
+    return sq_setparamscheck(self->vm, nparamscheck, typemark);
+}
+
 glong squirrel_vm_bind_env(SquirrelVm* self, glong idx)
 {
     return sq_bindenv(self->vm, idx);
