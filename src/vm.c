@@ -4,65 +4,37 @@
 #include <sqstdio.h>
 #include <stdio.h>
 
-struct _SquirrelVm
+
+
+SquirrelVm* squirrel_vm_copy(SquirrelVm*r)
 {
-    GObject parent_instance;
-    HSQUIRRELVM vm;
-};
-
-G_DEFINE_TYPE (SquirrelVm, squirrel_vm, G_TYPE_OBJECT)
-
-    enum {
-        ON_PRINT,
-        ON_ERROR,
-        LAST_SIGNAL
-    };
-
-static guint signals[LAST_SIGNAL];
-
-static void squirrel_vm_class_init(SquirrelVmClass* klass)
-{
-    signals[ON_PRINT] = g_signal_new("on_print",
-            G_TYPE_FROM_CLASS(klass),
-            G_SIGNAL_RUN_LAST,
-            0, NULL, NULL, NULL, G_TYPE_NONE, 1, G_TYPE_STRING);
+    return g_memdup(r, sizeof(SquirrelVm));
 }
 
-static void squirrel_vm_init(SquirrelVm* self)
+void squirrel_vm_free(SquirrelVm*r)
 {
+    g_free(r);
 }
 
-static void printfunc(HSQUIRRELVM v, const SQChar* s,...)
-{
-    va_list vl;
-    va_start(vl, s);
-    gchar* msg = (gchar*)g_malloc(1024);
-    vsnprintf(msg, 1024, s, vl);
-    va_end(vl);
 
-    SquirrelVm* self = sq_getforeignptr(v);
-    g_signal_emit(self, signals[ON_PRINT], 0, msg);
-    g_free(msg);
+// In the source
+G_DEFINE_BOXED_TYPE (SquirrelVm, squirrel_vm,
+                     squirrel_vm_copy,
+                     squirrel_vm_free)
+
+SquirrelObj* squirrel_obj_copy(SquirrelObj*r)
+{
+    return g_memdup(r, sizeof(SquirrelObj));
 }
 
-static void errorfunc(HSQUIRRELVM v, const SQChar* s,...)
+void squirrel_obj_free(SquirrelObj*r)
 {
-    va_list vl;
-    va_start(vl, s);
-    GString* msg = g_string_new(NULL);
-    g_string_vprintf(msg, s, vl);
-    va_end(vl);
-
-    SquirrelVm* self = sq_getforeignptr(v);
-    g_signal_emit(self, signals[ON_PRINT], 0, msg->str);
-    g_string_free(msg, TRUE);
+    g_free(r);
 }
 
-SquirrelVm* squirrel_vm_from_hvm(gpointer ptr)
-{
-    SquirrelVm* self = sq_getforeignptr(ptr);
-    return self;
-}
+G_DEFINE_BOXED_TYPE (SquirrelObj, squirrel_obj,
+                     squirrel_obj_copy,
+                     squirrel_obj_free)
 
 
 const char* squirrel_objecttype_to_string(SquirrelOBJECTTYPE t)
@@ -110,40 +82,36 @@ const char* squirrel_objecttype_to_string(SquirrelOBJECTTYPE t)
     }
 }
 
-
-gboolean squirrel_vm_check_type(SquirrelVm* self, glong sp, SquirrelOBJECTTYPE t)
+SQRESULT squirrel_printfunc(HSQUIRRELVM v, const SQChar *s, ...)
 {
-    SquirrelOBJECTTYPE o = sq_gettype(self->vm, sp);
-    if(o != t) {
-        GString* s = g_string_new(NULL);
-        g_string_printf("expected %s, got %s", 
-                squirrel_objecttype_to_string(t), 
-                squirrel_objecttype_to_string(o));
-        sq_throwerror(self->vm, s->str);
-        g_string_free(s, TRUE);
-        return FALSE;
-    }
-
-    return TRUE;
+    va_list vl;
+    va_start(vl, s);
+    vprintf(s, vl);
+    va_end(vl);
+    return 0;
 }
+
 
 SquirrelVm* squirrel_vm_new(glong initial_stack_size)
 {
-    SquirrelVm* self = g_object_new(SQUIRREL_TYPE_VM, NULL);
-    self->vm = sq_open(initial_stack_size);
-    sq_setforeignptr(self->vm, self);
-    sqstd_seterrorhandlers(self->vm);
-    sq_setprintfunc(self->vm, printfunc, errorfunc);
+    SquirrelVm* vm = g_malloc(sizeof(SquirrelVm));
+    vm->vm = sq_open(initial_stack_size);
+    sq_setprintfunc(vm->vm, squirrel_printfunc, squirrel_printfunc);
+    sqstd_seterrorhandlers(vm->vm);
+    return vm;
+}
 
-    // register the require function into the root table
-    /*
-       sq_pushroottable(self->vm);
-       sq_pushstring(self->vm, "require", -1);
-       sq_newclosure(self->vm, squirrel_require, 0);
-       sq_newslot(self->vm, -3, SQFalse);
-       sq_pop(self->vm, 1); 
-       */
-    return self;
+
+SquirrelVm* squirrel_vm_from_hvm(HSQUIRRELVM hvm)
+{
+    SquirrelVm* vm = g_malloc(sizeof(SquirrelVm));
+    vm->vm = hvm;
+    return vm;
+}
+
+void squirrel_vm_close(SquirrelVm* self)
+{
+    sq_close(self->vm);
 }
 
 glong squirrel_vm_suspend(SquirrelVm* self)
@@ -259,6 +227,8 @@ static SQInteger squirrel_exec_native_closure(HSQUIRRELVM hvm)
         g_warning("could not get c function pointer from top of stack");
     }
 
+    g_free(vm);
+
     return result;
 }
 
@@ -350,6 +320,11 @@ void squirrel_vm_push_null(SquirrelVm* self)
     sq_pushnull(self->vm);
 }
 
+void squirrel_vm_new_thread(SquirrelVm* self, glong initial_stack_sz)
+{
+    sq_newthread(self->vm, initial_stack_sz);
+}
+
 void squirrel_vm_push_thread(SquirrelVm* self, SquirrelVm* thread)
 {
     sq_pushthread(self->vm, thread->vm);
@@ -427,9 +402,10 @@ glong squirrel_vm_get_bool(SquirrelVm* self, glong idx, gboolean* b)
     return sq_getbool(self->vm, idx, b);
 }
 
-glong squirrel_vm_get_thread(SquirrelVm* self, glong idx, SquirrelVm* thread)
+glong squirrel_vm_get_thread(SquirrelVm* self, glong idx, SquirrelVm** thread)
 {
-    return sq_getthread(self->vm, idx, &thread);
+    *thread = g_malloc(sizeof(SquirrelVm));
+    return sq_getthread(self->vm, idx, &(*thread)->vm);
 }
 
 glong squirrel_vm_get_user_pointer(SquirrelVm* self, glong idx, gpointer* ptr)
@@ -766,7 +742,7 @@ void squirrel_vm_get_last_error(SquirrelVm* self)
 
 glong squirrel_vm_get_stack_object(SquirrelVm* self, glong idx, SquirrelObj** po)
 {
-    *po = g_object_new(SQUIRREL_TYPE_OBJ, NULL);
+    *po = g_malloc(sizeof(SquirrelObj));
     return sq_getstackobj(self->vm, idx, &(*po)->hsq_obj);
 }
 

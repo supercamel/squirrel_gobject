@@ -8,7 +8,11 @@ G_BEGIN_DECLS
 
 #define SQUIRREL_TYPE_VM (squirrel_vm_get_type())
 
-G_DECLARE_FINAL_TYPE (SquirrelVm, squirrel_vm, Squirrel, Vm, GObject)
+GType squirrel_vm_get_type(void);
+
+typedef struct {
+    HSQUIRRELVM vm;
+} SquirrelVm;
 
    
 typedef enum {
@@ -36,13 +40,11 @@ typedef enum {
 
 #define SQUIRREL_TYPE_OBJ (squirrel_obj_get_type())
 
-G_DECLARE_FINAL_TYPE (SquirrelObj, squirrel_obj, Squirrel, Obj, GObject)
-
-struct _SquirrelObj
-{
-    GObject parent_instance;
+typedef struct {
     HSQOBJECT hsq_obj;
-};
+} SquirrelObj;
+
+GType squirrel_obj_get_type();
 
 
 
@@ -104,6 +106,8 @@ gboolean squirrel_vm_check_type(SquirrelVm* self, glong sp, SquirrelOBJECTTYPE t
 SquirrelVm* squirrel_vm_new(glong initial_stack_size);
 gboolean squirrel_vm_do_file(SquirrelVm* self, const gchar* path, gboolean retval, gboolean print_error);
 
+void squirrel_vm_close(SquirrelVm* self);
+
 
 /**
  * squirrel_vm_test:
@@ -157,6 +161,7 @@ void squirrel_vm_push_int(SquirrelVm* self, glong n);
 void squirrel_vm_push_bool(SquirrelVm* self, gboolean b);
 void squirrel_vm_push_user_pointer(SquirrelVm* self, gpointer p);
 void squirrel_vm_push_null(SquirrelVm* self);
+void squirrel_vm_new_thread(SquirrelVm* self, glong initial_stack_sz);
 void squirrel_vm_push_thread(SquirrelVm* self, SquirrelVm* thread);
 SquirrelOBJECTTYPE squirrel_vm_get_object_type(SquirrelVm* self, glong idx);
 glong squirrel_vm_get_typeof(SquirrelVm* self, glong idx);
@@ -229,7 +234,7 @@ glong squirrel_vm_get_bool(SquirrelVm* self, glong idx, gboolean* b);
  * @idx: index
  * @thread: (out)(transfer full): the thread
  */
-glong squirrel_vm_get_thread(SquirrelVm* self, glong idx, SquirrelVm* thread);
+glong squirrel_vm_get_thread(SquirrelVm* self, glong idx, SquirrelVm** thread);
 
 
 /**

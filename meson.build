@@ -1,5 +1,8 @@
 project('libsquirrel3', 'c', 'cpp', version: '0.1', license: 'MIT')
 
+add_project_arguments('-D_SQ64', language: 'cpp')
+add_project_arguments('-D_SQ64', language: 'c')
+
 gnome = import('gnome')
 pkg = import('pkgconfig')
 
@@ -30,8 +33,7 @@ squirrel3_sources = [
   'Squirrel3/sqstdlib/sqstdstream.cpp',
   'Squirrel3/sqstdlib/sqstdstring.cpp',
   'Squirrel3/sqstdlib/sqstdsystem.cpp',
-  'src/vm.c',
-  'src/obj.c'
+  'src/vm.c'
   ]
 
 libsquirrel3lib = shared_library('squirrel3',
