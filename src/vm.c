@@ -128,7 +128,7 @@ glong squirrel_vm_wake_up(SquirrelVm* self,
     return sq_wakeupvm(self->vm, resumedret, retval, raiseerror, throwerror);
 }
 
-glong squirrel_vm_get_state(SquirrelVm* self)
+SquirrelVMSTATE squirrel_vm_get_state(SquirrelVm* self)
 {
     return sq_getvmstate(self->vm);
 }
@@ -430,6 +430,26 @@ glong squirrel_vm_set_type_tag(SquirrelVm* self, glong idx, gpointer typetag)
 glong squirrel_vm_get_type_tag(SquirrelVm* self, glong idx, gpointer* typetag)
 {
     return sq_gettypetag(self->vm, idx, typetag);
+}
+
+void squirrel_vm_set_vm_release_hook(SquirrelVm* self, SquirrelReleaseHook hook)
+{
+    sq_setvmreleasehook(self->vm, hook);
+}
+
+gpointer squirrel_vm_get_vm_release_hook(SquirrelVm* self)
+{
+    return sq_getvmreleasehook(self->vm);
+}
+
+void squirrel_vm_set_foreign_pointer(SquirrelVm* self, gpointer ptr)
+{
+    sq_setforeignptr(self->vm, ptr);
+}
+
+gpointer squirrel_vm_get_foreign_pointer(SquirrelVm* self)
+{
+    return sq_getforeignptr(self->vm);
 }
 
 void squirrel_vm_set_release_hook(SquirrelVm* self, glong idx, SquirrelReleaseHook hook)

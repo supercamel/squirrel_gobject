@@ -38,6 +38,14 @@ typedef enum {
 
 #define SQUIRREL_TYPE_OBJECTTYPE (squirrel_objecttype_get_type())
 
+typedef enum {
+    SQUIRREL_VMSTATE_IDLE = SQ_VMSTATE_IDLE,
+    SQUIRREL_VMSTATE_RUNNING = SQ_VMSTATE_RUNNING,
+    SQUIRREL_VMSTATE_SUSPENDED = SQ_VMSTATE_SUSPENDED
+} SquirrelVMSTATE;
+
+#define SQUIRREL_TYPE_VMSTATE (squirrel_vmstate_get_type())
+
 #define SQUIRREL_TYPE_OBJ (squirrel_obj_get_type())
 
 typedef struct {
@@ -121,7 +129,7 @@ glong squirrel_vm_wake_up(SquirrelVm* self,
         gboolean raiseerror, 
         gboolean throwerror);
 
-glong squirrel_vm_get_state(SquirrelVm* self);
+SquirrelVMSTATE squirrel_vm_get_state(SquirrelVm* self);
 glong squirrel_vm_get_version(SquirrelVm* self);
 
 //glong sq_compile(SquirrelVm* self, 
@@ -391,6 +399,18 @@ void squirrel_vm_get_last_error(SquirrelVm* self);
 glong squirrel_vm_get_stack_object(SquirrelVm* self, glong idx, SquirrelObj** po);
 void squirrel_vm_push_object(SquirrelVm* self, SquirrelObj* obj);
 void squirrel_vm_add_ref(SquirrelVm* self, SquirrelObj* po);
+
+/**
+ * squirrel_vm_set_vm_release_hook:
+ * @self: the self
+ * @hook: (scope notified): the write function
+ */
+void squirrel_vm_set_vm_release_hook(SquirrelVm* self, SquirrelReleaseHook hook);
+gpointer squirrel_vm_get_vm_release_hook(SquirrelVm* self);
+
+void squirrel_vm_set_foreign_pointer(SquirrelVm* self, gpointer ptr);
+gpointer squirrel_vm_get_foreign_pointer(SquirrelVm* self);
+
 gboolean squirrel_vm_release(SquirrelVm* self, SquirrelObj* po);
 gulong squirrel_vm_get_ref_count(SquirrelVm* self, SquirrelObj* po);
 void squirrel_reset_object(SquirrelObj* po);
