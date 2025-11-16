@@ -209,18 +209,23 @@ void squirrel_vm_new_array(SquirrelVm* self, glong size)
     sq_newarray(self->vm, size);
 }
 
+typedef struct {
+    SquirrelFunction func;
+    gpointer user_data;
+} SquirrelClosureData;
+
 static SQInteger squirrel_exec_native_closure(HSQUIRRELVM hvm)
 {
     SquirrelVm* vm = squirrel_vm_from_hvm(hvm);
 
-    SquirrelFunction c;
+    SquirrelClosureData* c;
     sq_getuserpointer(hvm, -1, &c);
     sq_pop(hvm, 1);
 
     SQInteger result = 0;
     if(c != NULL) 
     {
-        result = (*c)(vm);
+        result = (*c->func)(vm, c->user_data);
     }
     else 
     {
@@ -228,11 +233,12 @@ static SQInteger squirrel_exec_native_closure(HSQUIRRELVM hvm)
     }
 
     g_free(vm);
+    //g_free(c);
 
     return result;
 }
 
-void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gulong nfreevars)
+void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gpointer user_data, gulong nfreevars)
 {
     // we gotta intercept function calls so that the HSQUIRRELVM is wrapped by a SquirrelVm gobject
     // the user provided function pointer is pushed to the stack as a free variable
@@ -244,6 +250,10 @@ void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gulong nfreev
     // problem is, if the user also provides free variables, squirrel_exec_native_closure
     // can't know which one of these is the function pointer
     // so we do a sneaky stack shuffle to insert the function pointer at the start
+    SquirrelClosureData* closure_data = g_malloc(sizeof(SquirrelClosureData));
+    closure_data->func = c;
+    closure_data->user_data = user_data;
+    
     if(nfreevars > 0) {
         HSQOBJECT* freevars = g_malloc(sizeof(HSQOBJECT)*nfreevars);
         for(int i = 0; i < nfreevars; i++) {
@@ -251,7 +261,7 @@ void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gulong nfreev
             sq_addref(self->vm, &freevars[i]);
             sq_pop(self->vm, 1);
         }
-        sq_pushuserpointer(self->vm, c);
+        sq_pushuserpointer(self->vm, closure_data);
 
         for(int i = nfreevars-1; i >= 0; i--) {
             sq_pushobject(self->vm, freevars[i]);
@@ -260,7 +270,7 @@ void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gulong nfreev
         g_free(freevars);
     }
     else {
-        sq_pushuserpointer(self->vm, c);
+        sq_pushuserpointer(self->vm, closure_data);
     }
     sq_newclosure(self->vm, squirrel_exec_native_closure, nfreevars+1);
 }
@@ -320,9 +330,9 @@ void squirrel_vm_push_null(SquirrelVm* self)
     sq_pushnull(self->vm);
 }
 
-void squirrel_vm_new_thread(SquirrelVm* self, glong initial_stack_sz)
+SquirrelVm* squirrel_vm_new_thread(SquirrelVm* self, glong initial_stack_sz)
 {
-    sq_newthread(self->vm, initial_stack_sz);
+    return squirrel_vm_from_hvm(sq_newthread(self->vm, initial_stack_sz));
 }
 
 void squirrel_vm_push_thread(SquirrelVm* self, SquirrelVm* thread)

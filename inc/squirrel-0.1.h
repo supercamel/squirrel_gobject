@@ -82,7 +82,7 @@ typedef struct {
 } SquirrelStackInfos;
 
 
-typedef glong (*SquirrelFunction)(SquirrelVm* hvm);
+typedef glong (*SquirrelFunction)(SquirrelVm* hvm, gpointer user_data);
 
 typedef glong (*SquirrelReleaseHook) (
         gpointer user_pointer, 
@@ -154,10 +154,11 @@ void squirrel_vm_new_array(SquirrelVm* self, glong size);
 /**
  * squirrel_vm_new_closure:
  * @self: the self
- * @c: (scope notified): the callback
- * @nfreevars: 
+ * @c: (scope async): the callback function
+ * @user_data: (transfer none): user data to pass to the callback
+ * @nfreevars: number of free variables
  */
-void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gulong nfreevars);
+void squirrel_vm_new_closure(SquirrelVm* self, SquirrelFunction c, gpointer user_data, gulong nfreevars);
 glong squirrel_vm_set_params_check(SquirrelVm* self, glong nparamscheck, const gchar* typemark);
 glong squirrel_vm_bind_env(SquirrelVm* self, glong idx);
 glong squirrel_vm_set_closure_root(SquirrelVm* self, glong idx);
@@ -169,7 +170,7 @@ void squirrel_vm_push_int(SquirrelVm* self, glong n);
 void squirrel_vm_push_bool(SquirrelVm* self, gboolean b);
 void squirrel_vm_push_user_pointer(SquirrelVm* self, gpointer p);
 void squirrel_vm_push_null(SquirrelVm* self);
-void squirrel_vm_new_thread(SquirrelVm* self, glong initial_stack_sz);
+SquirrelVm* squirrel_vm_new_thread(SquirrelVm* self, glong initial_stack_sz);
 void squirrel_vm_push_thread(SquirrelVm* self, SquirrelVm* thread);
 SquirrelOBJECTTYPE squirrel_vm_get_object_type(SquirrelVm* self, glong idx);
 glong squirrel_vm_get_typeof(SquirrelVm* self, glong idx);
