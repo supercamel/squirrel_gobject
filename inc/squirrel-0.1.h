@@ -459,6 +459,15 @@ glong squirrel_vm_stack_infos(SquirrelVm* self, gint level, SquirrelStackInfos* 
 
 glong squirrel_vm_register_mathlib(SquirrelVm* self);
 
+/**
+ * squirrel_vm_run_callback:
+ * This is a helper function to run a callback from a signal handler. It provides consistent error catching and formatting.
+ * @self: the self
+ * @n_params: number of parameters on the stack
+ * @signal_name: name of the signal to run
+ */
+void squirrel_vm_run_callback(SquirrelVm* self, int n_params, gchar* signal_name);
+
 G_END_DECLS
 
 

@@ -871,3 +871,15 @@ glong squirrel_vm_register_mathlib(SquirrelVm* self)
 }
 
 
+
+void squirrel_vm_run_callback(SquirrelVm* self, int n_params, gchar* signal_name)
+{
+    if(squirrel_vm_call(self, n_params, TRUE, FALSE) != SQUIRREL_OK)
+    {
+        // an error occurred
+        squirrel_vm_get_last_error(self);
+        gchar* err_msg;
+        squirrel_vm_get_string(self, -1, &err_msg);
+        g_warning("Error running Squirrel callback for signal '%s': %s", signal_name, err_msg);
+    }
+}
